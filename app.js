@@ -18,6 +18,8 @@ app.set('view engine', 'ejs');
 // Set the views directory
 app.set('views', path.join(__dirname, 'views'));
 
+app.use('/public', express.static('public'));
+
 const Accounts = require('./models/accounts.model.js');
 const { userInfo } = require('os');
 
@@ -69,7 +71,7 @@ app.get('/dashboard',authentication,  (req, res) => {
     res.render('index');
 });
 
-app.post('/create', async (req, res) => {
+app.post('/create',authentication, async (req, res) => {
     let { name, user, pass } = req.body;
     console.log(req.body)
     ///saving
@@ -91,7 +93,7 @@ app.post('/create', async (req, res) => {
     }
 });
 
-app.get('/getallaccounts', async (req, res) => {
+app.get('/getallaccounts',authentication, async (req, res) => {
     try {
         // Fetch all accounts from the Accounts collection
         const accounts = await Accounts.find();
@@ -114,7 +116,7 @@ app.get('/getallaccounts', async (req, res) => {
     }
 });
 
-app.post('/login', async (req, res) => {
+app.post('/login',authentication, async (req, res) => {
     let { user, pass } = req.body;
     console.log(req.body);
     try {
