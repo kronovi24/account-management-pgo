@@ -3,6 +3,7 @@ const puppeteer = require('puppeteer');
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const fs = require("fs");
 
 
 
@@ -24,22 +25,59 @@ app.use(bodyParser.json());
 
 const port = 3000
 
-// app.get('/', (req, res) => {
-//   res.send('Hello World!')
-// })
+function authentication(req, res, next) {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) {
+        res.setHeader('WWW-Authenticate', 'Basic');
+        const error = new Error('Authorization header missing. You are not authenticated!');
+        error.status = 401;
+        return next(error);
+    }
+
+    const encodedCredentials = authHeader.split(' ')[1];
+    if (!encodedCredentials) {
+        res.setHeader('WWW-Authenticate', 'Basic');
+        const error = new Error('Malformed Authorization header. You are not authenticated!');
+        error.status = 401;
+        return next(error);
+    }
+
+    const credentials = Buffer.from(encodedCredentials, 'base64').toString().split(':');
+    const [username, password] = credentials;
+
+    if (username === 'admin' && password === 'password') {
+        return next(); // User authenticated successfully
+    }
+
+    res.setHeader('WWW-Authenticate', 'Basic');
+    const error = new Error('Invalid username or password. You are not authenticated!');
+    error.status = 401;
+    return next(error);
+}
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+
+app.get('/', (req, res) => {
+    res.render('welcome');
+});
+
 
 // Route to render an HTML view
-app.get('/', (req, res) => {
+app.get('/dashboard',authentication,  (req, res) => {
     res.render('index');
 });
 
-app.get('/create', async (req, res) => {
+app.post('/create', async (req, res) => {
+    let { name, user, pass } = req.body;
+    console.log(req.body)
     ///saving
     const newAccount = new Accounts({
-        name: 'Kurtz Canoy',
-        user: 'kurtz.yonac',
-        pass: 'samplepass',
-        status:'done'
+        name: name,
+        user: user,
+        pass: pass,
+        status:''
     });
 
     try {
@@ -93,7 +131,7 @@ app.post('/login', async (req, res) => {
         await page.type('[name="pass"]', pass);
         
         // Optionally, you can simulate a click on the login button
-        // await page.click('[name="login"]');
+        //await page.click('[name="login"]');
     
         // Send success response
         res.json({ success: true, message: 'Login attempted' });
@@ -101,6 +139,11 @@ app.post('/login', async (req, res) => {
         console.error('Error during Puppeteer login automation:', error);
         res.status(500).json({ success: false, message: 'An error occurred' });
     }
+});
+
+
+app.get('/logoutUser', (req, res) => {
+    res.status(401).send('You have been logged out.'); // Forces browser to re-prompt for credentials
 });
 
 ///db connection
