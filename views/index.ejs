@@ -204,6 +204,7 @@
                             icon: "success"
                         });
                         $('#createAcc').modal('hide');
+                        table.ajax.reload()
                     },
                     error: function (xhr, status, error) {
                         console.log('Error:', error);
