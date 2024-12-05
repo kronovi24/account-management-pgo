@@ -5,14 +5,24 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
-        crossorigin="anonymous"></script>
+    <!-- jQuery (required by DataTables) -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+        integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
 
-    <link href="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.1.8/b-3.2.0/datatables.min.css" rel="stylesheet">
-    <script src="https://cdn.datatables.net/v/bs5/jq-3.7.0/dt-2.1.8/b-3.2.0/datatables.min.js"></script>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+
+
 
 
     <link rel="icon" type="image/x-icon" href="/public/images/pgsdn.png">
@@ -24,10 +34,16 @@
             padding: 12px 15px;
             /* Adjust the padding as needed */
         }
+        .status-container {
+            display: flex;
+            align-items: center;
+            font-size: large;
+            gap: 5px;
+        }
     </style>
 
 
-    <nav class="navbar navbar-expand-lg bg-light">
+    <nav class="navbar navbar-dark bg-black navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="#">F O L</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -55,7 +71,6 @@
 </head>
 
 <body>
-
 
     <!-- Modal -->
     <div class="modal fade" id="createAcc" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
@@ -93,10 +108,11 @@
         </div>
     </div>
 
-    <div class="container-fluid p-3">
-        <div class="row justify-content-center">
 
-            <div class="col-10 p-0 m-0 mt-3 rounded border border-3 border-dark">
+    <div class="container-fluid">
+        <div class="row justify-content-center bg-dark" style="height: 100vh;">
+
+            <div class="col-10 p-0 m-0 mt-3 rounded border border-3 border-dark bg-white" style="height: fit-content;">
                 <div class="bg-primary p-2 d-flex justify-content-between">
                     <h1 class="text-white fw-bold m-0">Accounts</h1>
                     <!-- Button trigger modal -->
@@ -106,7 +122,7 @@
                 </div>
 
                 <div class="p-3">
-                    <table id="accountsTable" class="display table-bordered">
+                    <table id="accountsTable" class="display table-bordered table-striped" style="width: 100%;">
                         <thead>
                             <tr>
                                 <th class="p-2">Name</th>
@@ -124,32 +140,15 @@
             </div>
 
         </div>
+    </div>
 
     </div>
 
+
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function () {
-            $('#accountsTable').DataTable({
-                processing: true,
-                serverSide: true,
-                ajax: {
-                    url: '/getallaccounts',
-                    type: 'GET',
-                    dataSrc: 'data'
-                },
-                columns: [
-                    { data: 'name' },
-                    { data: 'user' },
-                    { data: 'status' },
-                    {
-                        data: null,
-                        render: function (data, type, row) {
-                            // Render a button in each row
-                            return `<button class="btn btn-sm btn-primary" onclick="login('${row.user}','${row.pass}')">Login</button>`;
-                        }
-                    }
-                ]
-            });
 
             $('#createAccountForm').on('submit', function (e) {
                 e.preventDefault();
@@ -165,25 +164,67 @@
                     }),
                     success: function (response) {
                         console.log(response);
+                        Swal.fire({
+                            title: "Account Added",
+                            text: "New account added to list",
+                            icon: "success"
+                        });
+                        $('#createAcc').modal('hide');
                     },
                     error: function (xhr, status, error) {
                         console.log('Error:', error);
                     }
                 });
             });
+
         });
 
-        function login(user, pass) {
+        var table = $('#accountsTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '/getallaccounts',
+                type: 'GET',
+                dataSrc: 'data'
+            },
+            columns: [
+                { data: 'name' },
+                { data: 'user' },
+                {
+                    data: 'status',
+                    render: function (data, type, row) {
+                        if (data === 'Done') {
+                            return `<div class='status-container'>Done <i class='bx bxs-check-circle fs-2 text-success'></i></div>`; // Bootstrap icon for check
+                        } else {
+                            return ' '; // Optional icon for other statuses
+                        }
+                    },
+                },
+                {
+                    data: null,
+                    render: function (data, type, row) {
+                        // Render a button in each row
+                        return `<button class="btn btn-sm btn-primary" onclick="login('${row.user}','${row.pass}','${row._id}')">Login</button>`;
+                    }
+                }
+            ]
+        });
+
+        function login(user, pass, id) {
             $.ajax({
                 url: '/login',
                 type: 'POST',
                 contentType: 'application/json',
                 data: JSON.stringify({
+                    id: id,
                     user: user,
                     pass: pass
                 }),
                 success: function (response) {
                     console.log(response);
+                    if (response.success == true) {
+                        table.ajax.reload()
+                    }
                 },
                 error: function (xhr, status, error) {
                     console.log('Error:', error);

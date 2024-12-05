@@ -85,7 +85,7 @@ app.post('/create',authentication, async (req, res) => {
     try {
         const savedAccount = await newAccount.save();
 
-        return res.status(200).json({ message: "Success " });
+        return res.status(200).json({ success: true ,message: "Success " });
 
     } catch (err) {
 
@@ -93,31 +93,41 @@ app.post('/create',authentication, async (req, res) => {
     }
 });
 
-app.get('/getallaccounts',authentication, async (req, res) => {
+app.get('/getallaccounts', authentication, async (req, res) => {
     try {
-        // Fetch all accounts from the Accounts collection
-        const accounts = await Accounts.find();
+        // Parse DataTables parameters
+        const start = parseInt(req.query.start, 10) || 0; // Starting record
+        const length = parseInt(req.query.length, 10) || 10; // Number of records per page
+        const searchValue = req.query.search?.value || ''; // Search value
 
-        // If no accounts are found, return a message
-        if (accounts.length === 0) {
-            return res.status(404).json({ message: "No accounts found" });
-        }
+        // Build the search filter
+        const searchFilter = searchValue
+            ? { $or: [{ name: { $regex: searchValue, $options: 'i' } }, { email: { $regex: searchValue, $options: 'i' } }] }
+            : {};
 
+        // Fetch filtered and paginated data
+        const totalRecords = await Accounts.countDocuments(); // Total records in the collection
+        const filteredRecords = await Accounts.countDocuments(searchFilter); // Total filtered records
+        const accounts = await Accounts.find(searchFilter)
+            .skip(start)
+            .limit(length);
+
+        // Return the DataTables response
         return res.json({
-            draw: req.query.draw, // DataTables draw counter
-            recordsTotal: accounts.length, // Total records in the database
-            recordsFiltered: accounts.length, // Filtered records (no filtering implemented in this example)
-            data: accounts // Data to display
+            draw: parseInt(req.query.draw, 10) || 1, // DataTables draw counter
+            recordsTotal: totalRecords, // Total records
+            recordsFiltered: filteredRecords, // Total filtered records
+            data: accounts, // Data for the current page
         });
-
     } catch (err) {
-        // Handle errors (e.g., database connection issues)
+        // Handle errors
         return res.status(500).json({ message: err.message });
     }
 });
 
+
 app.post('/login',authentication, async (req, res) => {
-    let { user, pass } = req.body;
+    let { user, pass , id } = req.body;
     console.log(req.body);
     try {
         // Launch Puppeteer and navigate to Facebook
@@ -134,6 +144,27 @@ app.post('/login',authentication, async (req, res) => {
         
         // Optionally, you can simulate a click on the login button
         //await page.click('[name="login"]');
+
+        //update status
+        try {
+            // Update one document
+            const update = { status: 'Done' }; // The fields to update
+
+            // Find by ID and update
+            const updatedAccount = await Accounts.findByIdAndUpdate(
+                id, 
+                update, 
+            );
+
+            if (!updatedAccount) {
+                console.log("No document found with this ID.");
+            } else {
+                console.log("Updated Document:", updatedAccount);
+            }
+        
+          } catch (error) {
+            console.error(error);
+          }
     
         // Send success response
         res.json({ success: true, message: 'Login attempted' });
