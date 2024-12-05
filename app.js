@@ -48,14 +48,34 @@ function authentication(req, res, next) {
     const credentials = Buffer.from(encodedCredentials, 'base64').toString().split(':');
     const [username, password] = credentials;
 
-    if (username === 'admin' && password === 'password') {
-        return next(); // User authenticated successfully
+    // Example users with roles
+    const users = {
+        admin: { password: 'password', role: 'admin' },
+        user: { password: 'userpass', role: 'user' },
+    };
+
+    // Check username and password
+    const user = users[username];
+    if (user && user.password === password) {
+        req.user = { username, role: user.role }; // Attach user info to the request object
+        return next();
     }
 
     res.setHeader('WWW-Authenticate', 'Basic');
     const error = new Error('Invalid username or password. You are not authenticated!');
     error.status = 401;
     return next(error);
+}
+
+function authorize(roles = []) {
+    return (req, res, next) => {
+        if (!roles.includes(req.user.role)) {
+            const error = new Error('Forbidden: You do not have the necessary permissions!');
+            error.status = 403;
+            return next(error);
+        }
+        next();
+    };
 }
 
 app.use(express.static(path.join(__dirname, 'public')));
@@ -68,7 +88,7 @@ app.get('/', (req, res) => {
 
 // Route to render an HTML view
 app.get('/dashboard',authentication,  (req, res) => {
-    res.render('index');
+    res.render('index', { user: req.user });
 });
 
 app.post('/create',authentication, async (req, res) => {
@@ -108,9 +128,13 @@ app.get('/getallaccounts', authentication, async (req, res) => {
         // Fetch filtered and paginated data
         const totalRecords = await Accounts.countDocuments(); // Total records in the collection
         const filteredRecords = await Accounts.countDocuments(searchFilter); // Total filtered records
+
         const accounts = await Accounts.find(searchFilter)
             .skip(start)
             .limit(length);
+
+        //done accounts
+        const doneCount = accounts.filter(account => account.status === "Done").length;
 
         // Return the DataTables response
         return res.json({
@@ -118,6 +142,7 @@ app.get('/getallaccounts', authentication, async (req, res) => {
             recordsTotal: totalRecords, // Total records
             recordsFiltered: filteredRecords, // Total filtered records
             data: accounts, // Data for the current page
+            done: doneCount
         });
     } catch (err) {
         // Handle errors
@@ -173,6 +198,28 @@ app.post('/login',authentication, async (req, res) => {
         res.status(500).json({ success: false, message: 'An error occurred' });
     }
 });
+
+
+app.post('/deleteAccount',authentication, async (req, res) => {
+    let { id } = req.body;
+    try {
+         // Find and delete the document by ID
+         const deletedAccount = await Accounts.findByIdAndDelete(id);
+
+         if (!deletedAccount) {
+             console.log("No Account found with.");
+             res.json({ success: false, message: 'Account Deleted' });
+         } else {
+             console.log("Deleted Document:", deletedAccount);
+             res.json({ success: true, message: 'Account Deleted' });
+         }
+         
+      } catch (error) {
+        console.error(error);
+      }
+
+})
+
 
 
 app.get('/logoutUser', (req, res) => {

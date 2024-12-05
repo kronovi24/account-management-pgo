@@ -12,6 +12,8 @@
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+
 
     <!-- DataTables CSS -->
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
@@ -43,7 +45,7 @@
     </style>
 
 
-    <nav class="navbar navbar-dark bg-black navbar-expand-lg">
+    <nav class="navbar navbar-dark bg-dark navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand fw-bold" href="#">F O L</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse"
@@ -57,7 +59,7 @@
                         <a class="nav-link active" aria-current="page" href="#">Home</a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link disabled">Disabled</a>
+                        <a class="nav-link">Logs</a>
                     </li>
                 </ul>
                 <div class="d-flex">
@@ -71,6 +73,8 @@
 </head>
 
 <body>
+
+    
 
     <!-- Modal -->
     <div class="modal fade" id="createAcc" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
@@ -109,19 +113,48 @@
     </div>
 
 
-    <div class="container-fluid">
-        <div class="row justify-content-center bg-dark" style="height: 100vh;">
+    <div class="container-fluid position-relative p-0" style="background-color: #161b21;">
 
-            <div class="col-10 p-0 m-0 mt-3 rounded border border-3 border-dark bg-white" style="height: fit-content;">
-                <div class="bg-primary p-2 d-flex justify-content-between">
-                    <h1 class="text-white fw-bold m-0">Accounts</h1>
+       
+        <div class="position-relative  d-flex align-items-center justify-content-center  border border-dark" style="height: 100vh; overflow-y: auto; z-index: 2;">
+
+            <div class="col-12 col-lg-10 p-0 m-0 rounded-3 bg-white" style="height: fit-content; " style="">
+                <div class="bg-dark p-3 d-flex justify-content-between rounded" style="background-color: #1B1A24;">
+                    <h1 class="text-white fw-bold m-0">Dashboard</h1>
                     <!-- Button trigger modal -->
                     <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createAcc">
                         Add New Account
                     </button>
                 </div>
 
-                <div class="p-3">
+                <div class="row p-3">
+                    <div class="col-4 col-lg-2">
+                        <div class="card shadow-lg" style="background: linear-gradient(110deg, #fdcd3b 60%, #ffed4b 60%);">
+                            <h5 class="card-header ">Total Accounts</h5>
+                            <div class="card-body bg-white rounded">
+                              <h5 class="card-title fw-bold" id="AccountsCounts">0</h5>
+                            </div>
+                          </div>
+                    </div>
+
+                    <div class="col-4 col-lg-2">
+                        <div class="card shadow-lg" style="background: linear-gradient(110deg, #052f5f 60%, #005377 60%);">
+                            <h5 class="card-header text-white">Finished Tasks</h5>
+                            <div class="card-body bg-white rounded">
+                              <h5 class="card-title fw-bold" id="TaskCounts">0</h5>
+                            </div>
+                          </div>
+                    </div>
+
+
+                    <div class="col-4 col-lg-2 d-flex flex-column justify-content-around">
+                        <button class="btn btn-warning fw-bold">View Logs</button>
+                        <button class="btn btn-danger fw-bold">Reset All Tasks</button>
+                    </div>
+                </div>
+
+                <div class="m-3 p-2 border border-dark rounded" >
+                    <h2>Account List</h2>
                     <table id="accountsTable" class="display table-bordered table-striped" style="width: 100%;">
                         <thead>
                             <tr>
@@ -148,6 +181,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+
         $(document).ready(function () {
 
             $('#createAccountForm').on('submit', function (e) {
@@ -179,13 +213,21 @@
 
         });
 
+
         var table = $('#accountsTable').DataTable({
             processing: true,
             serverSide: true,
             ajax: {
                 url: '/getallaccounts',
                 type: 'GET',
-                dataSrc: 'data'
+                dataSrc: 'dareta',
+                dataSrc: function (response) {
+                    console.log("Raw Response:", response); // Logs the raw response
+                    let totalAccounts = response.recordsTotal
+                    $('#AccountsCounts').text(totalAccounts)
+                    $('#TaskCounts').text(response.done)
+                    return response.data; // Return the data array to populate the table
+                }
             },
             columns: [
                 { data: 'name' },
@@ -204,32 +246,99 @@
                     data: null,
                     render: function (data, type, row) {
                         // Render a button in each row
-                        return `<button class="btn btn-sm btn-primary" onclick="login('${row.user}','${row.pass}','${row._id}')">Login</button>`;
+                        return `
+                        <button class="btn btn-sm btn-primary" onclick="login('${row.name}','${row.user}','${row.pass}','${row._id}')">Login</button>
+                        <% if (user.role === 'admin') { %>
+                            <button class="btn btn-sm btn-danger" onclick="deleteAccount('${row._id}')">Delete</button>
+                        <% } %>
+                        `;
                     }
                 }
             ]
         });
 
-        function login(user, pass, id) {
-            $.ajax({
-                url: '/login',
-                type: 'POST',
-                contentType: 'application/json',
-                data: JSON.stringify({
-                    id: id,
-                    user: user,
-                    pass: pass
-                }),
-                success: function (response) {
-                    console.log(response);
-                    if (response.success == true) {
-                        table.ajax.reload()
+
+        <% if (user.role === 'admin') { %>
+            
+            function deleteAccount(id){
+
+                Swal.fire({
+                title: "Do you want to save the changes?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: "Delete Account?",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '/deleteAccount',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                id: id,
+                            }),
+                            success: function (response) {
+                                console.log(response);
+                                if (response.success == true) {
+                                    Swal.fire("Saved!", "", "success");
+                                    table.ajax.reload()
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                console.log('Error:', error);
+                            }
+                        });
+                    } else if (result.isDenied) {
+                        Swal.fire("Changes are not saved", "", "info");
                     }
-                },
-                error: function (xhr, status, error) {
-                    console.log('Error:', error);
+                });
+
+                
+               
+            }
+
+        <% } %>
+
+        function login(name, user, pass, id) {
+
+            Swal.fire({
+            title: "Do you want to Login this Account?",
+            html: `
+               <b>${name}</b>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: "Yes",
+            }).then((result) => {
+            /* Read more about isConfirmed, isDenied below */
+                if (result.isConfirmed) {
+
+                    $.ajax({
+                        url: '/login',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            id: id,
+                            user: user,
+                            pass: pass
+                        }),
+                        success: function (response) {
+                            console.log(response);
+                            if (response.success == true) {
+                                table.ajax.reload()
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.log('Error:', error);
+                        }
+                    });
+                    
+                } else if (result.isDenied) {
+                    Swal.fire("Changes are not saved", "", "info");
                 }
             });
+
+
+            
         }
     </script>
 
