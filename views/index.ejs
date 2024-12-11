@@ -12,7 +12,9 @@
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4"
+        crossorigin="anonymous"></script>
 
 
     <!-- DataTables CSS -->
@@ -36,6 +38,7 @@
             padding: 12px 15px;
             /* Adjust the padding as needed */
         }
+
         .status-container {
             display: flex;
             align-items: center;
@@ -72,9 +75,8 @@
 
 </head>
 
-<body>
+<body style="background-color: #161b21;">
 
-    
 
     <!-- Modal -->
     <div class="modal fade" id="createAcc" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
@@ -90,17 +92,22 @@
 
                         <div class="mb-3">
                             <label for="name" class="form-label">Name:</label>
-                            <input type="text" class="form-control" id="name" name="name" placeholder="Type name here">
+                            <input type="text" class="form-control" id="name" name="name" placeholder="Type name here" required>
                         </div>
 
                         <div class="mb-3">
                             <label for="user" class="form-label">Username/Email:</label>
-                            <input type="text" class="form-control" id="user" name="user" placeholder="Type EMAIL here">
+                            <input type="text" class="form-control" id="user" name="user" placeholder="Type email here" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="user" class="form-label">Remarks:</label>
+                            <input type="text" class="form-control" id="remarks" name="remarks" placeholder="..." >
                         </div>
 
                         <div class="mb-3 ">
                             <label for="password" class="form-label">Password:</label>
-                            <input type="text" class="form-control border border-danger " id="pass" name="pass">
+                            <input type="text" class="form-control border border-danger " id="pass" name="pass" required>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -113,12 +120,11 @@
     </div>
 
 
-    <div class="container-fluid position-relative p-0" style="background-color: #161b21;">
+    <div class="container-fluid p-0 mt-5">
 
-       
-        <div class="position-relative  d-flex align-items-center justify-content-center  border border-dark" style="height: 100vh; overflow-y: auto; z-index: 2;">
+        <div class=" d-flex align-items-center justify-content-center  border border-dark ">
 
-            <div class="col-12 col-lg-10 p-0 m-0 rounded-3 bg-white" style="height: fit-content; " style="">
+            <div class="col-12 col-lg-10 p-0 m-0 rounded-3 bg-white" style="height: fit-content; ">
                 <div class="bg-dark p-3 d-flex justify-content-between rounded" style="background-color: #1B1A24;">
                     <h1 class="text-white fw-bold m-0">Dashboard</h1>
                     <!-- Button trigger modal -->
@@ -129,31 +135,33 @@
 
                 <div class="row p-3">
                     <div class="col-4 col-lg-2">
-                        <div class="card shadow-lg" style="background: linear-gradient(110deg, #fdcd3b 60%, #ffed4b 60%);">
+                        <div class="card shadow-lg"
+                            style="background: linear-gradient(110deg, #fdcd3b 60%, #ffed4b 60%);">
                             <h5 class="card-header ">Total Accounts</h5>
                             <div class="card-body bg-white rounded">
-                              <h5 class="card-title fw-bold" id="AccountsCounts">0</h5>
+                                <h5 class="card-title fw-bold" id="AccountsCounts">0</h5>
                             </div>
-                          </div>
+                        </div>
                     </div>
 
                     <div class="col-4 col-lg-2">
-                        <div class="card shadow-lg" style="background: linear-gradient(110deg, #052f5f 60%, #005377 60%);">
+                        <div class="card shadow-lg"
+                            style="background: linear-gradient(110deg, #052f5f 60%, #005377 60%);">
                             <h5 class="card-header text-white">Finished Tasks</h5>
                             <div class="card-body bg-white rounded">
-                              <h5 class="card-title fw-bold" id="TaskCounts">0</h5>
+                                <h5 class="card-title fw-bold" id="TaskCounts">0</h5>
                             </div>
-                          </div>
+                        </div>
                     </div>
 
 
                     <div class="col-4 col-lg-2 d-flex flex-column justify-content-around">
                         <button class="btn btn-warning fw-bold">View Logs</button>
-                        <button class="btn btn-danger fw-bold">Reset All Tasks</button>
+                        <button class="btn btn-danger fw-bold" onclick="resetTask()">Reset All Tasks</button>
                     </div>
                 </div>
 
-                <div class="m-3 p-2 border border-dark rounded" >
+                <div class="m-3 p-2 border border-dark rounded">
                     <h2>Account List</h2>
                     <table id="accountsTable" class="display table-bordered table-striped" style="width: 100%;">
                         <thead>
@@ -161,6 +169,7 @@
                                 <th class="p-2">Name</th>
                                 <th class="p-2">Email</th>
                                 <th class="p-2">Status</th>
+                                <th class="p-2">Remarks</th>
                                 <th class="p-2">Action</th>
                             </tr>
                         </thead>
@@ -194,6 +203,7 @@
                     data: JSON.stringify({
                         name: $('#name').val(),
                         user: $('#user').val(),
+                        remarks: $('#user').val(),
                         pass: $('#pass').val()
                     }),
                     success: function (response) {
@@ -230,6 +240,11 @@
                     return response.data; // Return the data array to populate the table
                 }
             },
+
+            columnDefs: [
+                { orderable: true, className: 'reorder', targets: 2 },
+                { orderable: false, targets: '_all' }
+            ],
             columns: [
                 { data: 'name' },
                 { data: 'user' },
@@ -243,6 +258,7 @@
                         }
                     },
                 },
+                { data: 'remarks' },
                 {
                     data: null,
                     render: function (data, type, row) {
@@ -255,19 +271,61 @@
                         `;
                     }
                 }
-            ]
+            ],
+
         });
+
+        function login(name, user, pass, id) {
+
+            Swal.fire({
+                title: "Do you want to Login this Account?",
+                html: `<b>${name}</b>`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: "Yes",
+            }).then((result) => {
+                /* Read more about isConfirmed, isDenied below */
+                if (result.isConfirmed) {
+
+                    $.ajax({
+                        url: '/login',
+                        type: 'POST',
+                        contentType: 'application/json',
+                        data: JSON.stringify({
+                            id: id,
+                            user: user,
+                            pass: pass
+                        }),
+                        success: function (response) {
+                            console.log(response);
+                            if (response.success == true) {
+                                table.ajax.reload()
+                            }
+                        },
+                        error: function (xhr, status, error) {
+                            console.log('Error:', error);
+                        }
+                    });
+
+                } else if (result.isDenied) {
+                    Swal.fire("Changes are not saved", "", "info");
+                }
+            });
+
+
+
+        }
 
 
         <% if (user.role === 'admin') { %>
-            
-            function deleteAccount(id){
+
+            function deleteAccount(id) {
 
                 Swal.fire({
-                title: "Do you want to save the changes?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: "Delete Account?",
+                    title: "Do you want to save the changes?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: "Delete Account?",
                 }).then((result) => {
                     if (result.isConfirmed) {
                         $.ajax({
@@ -293,54 +351,46 @@
                     }
                 });
 
-                
-               
+
+
             }
 
-        <% } %>
 
-        function login(name, user, pass, id) {
+            function resetTask() {
 
-            Swal.fire({
-            title: "Do you want to Login this Account?",
-            html: `
-               <b>${name}</b>
-            `,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonText: "Yes",
-            }).then((result) => {
-            /* Read more about isConfirmed, isDenied below */
-                if (result.isConfirmed) {
-
-                    $.ajax({
-                        url: '/login',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify({
-                            id: id,
-                            user: user,
-                            pass: pass
-                        }),
-                        success: function (response) {
-                            console.log(response);
-                            if (response.success == true) {
-                                table.ajax.reload()
+                Swal.fire({
+                    title: "Do you want to Reset all Task?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: "Reset",
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '/resettask',
+                            type: 'GET',
+                            success: function (response) {
+                                console.log(response);
+                                if (response.success == true) {
+                                    Swal.fire("Saved!", "", "success");
+                                    table.ajax.reload()
+                                }
+                            },
+                            error: function (xhr, status, error) {
+                                console.log('Error:', error);
                             }
-                        },
-                        error: function (xhr, status, error) {
-                            console.log('Error:', error);
-                        }
-                    });
-                    
-                } else if (result.isDenied) {
-                    Swal.fire("Changes are not saved", "", "info");
-                }
-            });
+                        });
+                    } else if (result.isDenied) {
+                        Swal.fire("Action Cancelled");
+                    }
+                });
 
 
-            
-        }
+
+            }
+
+            <% } %>
+
+
     </script>
 
 </body>

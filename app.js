@@ -6,6 +6,10 @@ const cors = require('cors');
 const fs = require("fs");
 
 
+const HOST = 'localhost';
+const PORT = 3000;
+
+
 
 const app = express()
 app.use(cors());  // Enable all CORS requests
@@ -21,6 +25,8 @@ app.set('views', path.join(__dirname, 'views'));
 app.use('/public', express.static('public'));
 
 const Accounts = require('./models/accounts.model.js');
+
+
 const { userInfo } = require('os');
 
 app.use(bodyParser.json());
@@ -92,13 +98,14 @@ app.get('/dashboard',authentication,  (req, res) => {
 });
 
 app.post('/create',authentication, async (req, res) => {
-    let { name, user, pass } = req.body;
+    let { name, user, pass, remarks } = req.body;
     console.log(req.body)
     ///saving
     const newAccount = new Accounts({
         name: name,
         user: user,
         pass: pass,
+        remarks: remarks,
         status:''
     });
 
@@ -119,21 +126,36 @@ app.get('/getallaccounts', authentication, async (req, res) => {
         const start = parseInt(req.query.start, 10) || 0; // Starting record
         const length = parseInt(req.query.length, 10) || 10; // Number of records per page
         const searchValue = req.query.search?.value || ''; // Search value
+        const order = req.query.order || []; // Sorting order array
+        const columns = req.query.columns || []; // Column definitions
 
         // Build the search filter
         const searchFilter = searchValue
             ? { $or: [{ name: { $regex: searchValue, $options: 'i' } }, { email: { $regex: searchValue, $options: 'i' } }] }
             : {};
 
-        // Fetch filtered and paginated data
+        // Build the sort filter
+        let sortFilter = {};
+        if (order.length > 0) {
+            const sortColumnIndex = parseInt(order[0].column, 10); // Column index for sorting
+            const sortDirection = order[0].dir === 'asc' ? 1 : -1; // Sorting direction
+            const sortColumn = columns[sortColumnIndex]?.data; // Column name to sort by
+
+            if (sortColumn) {
+                sortFilter[sortColumn] = sortDirection;
+            }
+        }
+
+        // Fetch filtered, sorted, and paginated data
         const totalRecords = await Accounts.countDocuments(); // Total records in the collection
         const filteredRecords = await Accounts.countDocuments(searchFilter); // Total filtered records
 
         const accounts = await Accounts.find(searchFilter)
+            .sort(sortFilter) // Apply sorting
             .skip(start)
             .limit(length);
 
-        //done accounts
+        // Calculate 'done' accounts
         const doneCount = accounts.filter(account => account.status === "Done").length;
 
         // Return the DataTables response
@@ -149,6 +171,26 @@ app.get('/getallaccounts', authentication, async (req, res) => {
         return res.status(500).json({ message: err.message });
     }
 });
+
+
+// Assume Accounts is your Mongoose model
+app.get('/resettask', authentication, async (req, res) => {
+    try {
+        // Define the filter (empty means update all documents)
+        const filter = {};
+
+        // Define the update operation
+        const update = { status: '' }; // Example: Set status to 'Active' for all records
+
+        // Execute the update
+        const result = await Accounts.updateMany(filter, update);
+
+        return res.status(200).json({ success: true ,message: "Success " });
+    } catch (error) {
+        return res.status(500).json({ message: err.message });
+    }
+});
+
 
 
 app.post('/login',authentication, async (req, res) => {
@@ -241,6 +283,15 @@ connectDB();
 
 
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+app.listen(port, async () => {
+    console.log(`Example app listening on port ${port}`);
+
+  
+    console.log('opening browser')
+    const browser = await puppeteer.launch({
+        headless: false,
+        defaultViewport: null
+    });
+    const page = await browser.newPage();
+    await page.goto(`http://${HOST}:${PORT}/`);
+});

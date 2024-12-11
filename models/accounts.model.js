@@ -22,6 +22,11 @@ const AccountsSchema = new Schema({
         type: String,
         required: [false, "status here"]
     },
+
+    remarks: {
+        type: String,
+        required: [false, "remarks here"]
+    },
 },
     {
         timestamps: true  // Automatically create createdAt and updatedAt fields
