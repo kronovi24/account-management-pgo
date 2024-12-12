@@ -63,7 +63,7 @@ function authentication(req, res, next) {
         admin: { password: 'password', role: 'admin' },
         user1: { password: 'user1', role: 'user' },
         user2: { password: 'user2', role: 'user' },
-        user1: { password: 'user3', role: 'user' },
+        user3: { password: 'user3', role: 'user' },
     };
 
     // Check username and password
