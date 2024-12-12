@@ -6,6 +6,9 @@ const cors = require('cors');
 const fs = require("fs");
 
 
+const moment = require('moment-timezone');
+
+
 const HOST = 'localhost';
 const PORT = 3000;
 
@@ -25,6 +28,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.use('/public', express.static('public'));
 
 const Accounts = require('./models/accounts.model.js');
+const Logs = require('./models/logs.model.js');
 
 
 const { userInfo } = require('os');
@@ -57,7 +61,9 @@ function authentication(req, res, next) {
     // Example users with roles
     const users = {
         admin: { password: 'password', role: 'admin' },
-        user: { password: 'userpass', role: 'user' },
+        user1: { password: 'user1', role: 'user' },
+        user2: { password: 'user2', role: 'user' },
+        user1: { password: 'user3', role: 'user' },
     };
 
     // Check username and password
@@ -93,11 +99,12 @@ app.get('/', (req, res) => {
 
 
 // Route to render an HTML view
-app.get('/dashboard',authentication,  (req, res) => {
+app.get('/dashboard', authentication, (req, res) => {
     res.render('index', { user: req.user });
 });
 
-app.post('/create',authentication, async (req, res) => {
+app.post('/create', authentication, async (req, res) => {
+    console.log(req.user);
     let { name, user, pass, remarks } = req.body;
     console.log(req.body)
     ///saving
@@ -106,13 +113,20 @@ app.post('/create',authentication, async (req, res) => {
         user: user,
         pass: pass,
         remarks: remarks,
-        status:''
+        status: ''
     });
+
+    const newLogs = new Logs({
+        user: req.user.username,
+        action: 'create',
+        account: name
+    })
 
     try {
         const savedAccount = await newAccount.save();
+        const savedLogs = await newLogs.save();
 
-        return res.status(200).json({ success: true ,message: "Success " });
+        return res.status(200).json({ success: true, message: "Success " });
 
     } catch (err) {
 
@@ -173,6 +187,52 @@ app.get('/getallaccounts', authentication, async (req, res) => {
 });
 
 
+
+
+app.get('/getallLogs', authentication, async (req, res) => {
+    try {
+        const draw = parseInt(req.query.draw) || 0;
+        const start = parseInt(req.query.start) || 0;
+        const length = parseInt(req.query.length) || 10;
+        const search = req.query.search?.value || '';
+
+        // Filter, Sort, and Paginate
+        const filter = search
+            ? {
+                $or: [
+                    { name: new RegExp(search, 'i') },
+                    { email: new RegExp(search, 'i') },
+                ]
+            }
+            : {};
+
+        const totalRecords = await Logs.countDocuments();
+        const filteredRecords = await Logs.countDocuments(filter);
+        const data = await Logs.find(filter)
+            .skip(start)
+            .limit(length)
+            .lean();
+
+        // Format createdAt and adjust timezone to Manila
+        const formattedData = data.map(item => ({
+            ...item,
+            createdAt: moment(item.createdAt).tz('Asia/Manila').format('YYYY-MM-DD HH:mm:ss'),
+        }));
+
+        res.json({
+            draw,
+            recordsTotal: totalRecords,
+            recordsFiltered: filteredRecords,
+            data :formattedData,
+        });
+    } catch (error) {
+        console.error('Error fetching data:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+});
+
+
+
 // Assume Accounts is your Mongoose model
 app.get('/resettask', authentication, async (req, res) => {
     try {
@@ -185,7 +245,14 @@ app.get('/resettask', authentication, async (req, res) => {
         // Execute the update
         const result = await Accounts.updateMany(filter, update);
 
-        return res.status(200).json({ success: true ,message: "Success " });
+        const newLogs = new Logs({
+            user: req.user.username,
+            action: 'Reset All tasks',
+            account: 'All'
+        })
+        const savedLogs = await newLogs.save();
+
+        return res.status(200).json({ success: true, message: "Success " });
     } catch (error) {
         return res.status(500).json({ message: err.message });
     }
@@ -193,12 +260,12 @@ app.get('/resettask', authentication, async (req, res) => {
 
 
 
-app.post('/login',authentication, async (req, res) => {
-    let { user, pass , id } = req.body;
+app.post('/login', authentication, async (req, res) => {
+    let { user, pass, id } = req.body;
     console.log(req.body);
     try {
         // Launch Puppeteer and navigate to Facebook
-        const browser = await puppeteer.launch({ 
+        const browser = await puppeteer.launch({
             headless: false,
             defaultViewport: null
         });
@@ -208,9 +275,9 @@ app.post('/login',authentication, async (req, res) => {
         // Perform login automation
         await page.type('[name="email"]', user);
         await page.type('[name="pass"]', pass);
-        
+
         // Optionally, you can simulate a click on the login button
-        //await page.click('[name="login"]');
+        await page.click('[name="login"]');
 
         //update status
         try {
@@ -219,20 +286,27 @@ app.post('/login',authentication, async (req, res) => {
 
             // Find by ID and update
             const updatedAccount = await Accounts.findByIdAndUpdate(
-                id, 
-                update, 
+                id,
+                update,
             );
 
             if (!updatedAccount) {
                 console.log("No document found with this ID.");
             } else {
                 console.log("Updated Document:", updatedAccount);
+
+                const newLogs = new Logs({
+                    user: req.user.username,
+                    action: 'Login Account',
+                    account: updatedAccount.name
+                })
+                const savedLogs = await newLogs.save();
             }
-        
-          } catch (error) {
+
+        } catch (error) {
             console.error(error);
-          }
-    
+        }
+
         // Send success response
         res.json({ success: true, message: 'Login attempted' });
     } catch (error) {
@@ -242,23 +316,31 @@ app.post('/login',authentication, async (req, res) => {
 });
 
 
-app.post('/deleteAccount',authentication, async (req, res) => {
+app.post('/deleteAccount', authentication, async (req, res) => {
     let { id } = req.body;
     try {
-         // Find and delete the document by ID
-         const deletedAccount = await Accounts.findByIdAndDelete(id);
+        // Find and delete the document by ID
+        const deletedAccount = await Accounts.findByIdAndDelete(id);
 
-         if (!deletedAccount) {
-             console.log("No Account found with.");
-             res.json({ success: false, message: 'Account Deleted' });
-         } else {
-             console.log("Deleted Document:", deletedAccount);
-             res.json({ success: true, message: 'Account Deleted' });
-         }
-         
-      } catch (error) {
+        if (!deletedAccount) {
+            console.log("No Account found with.");
+            res.json({ success: false, message: 'Account Deleted' });
+        } else {
+            console.log("Deleted Document:", deletedAccount);
+
+            const newLogs = new Logs({
+                user: req.user.username,
+                action: 'Removed Account',
+                account: deletedAccount.name
+            })
+            const savedLogs = await newLogs.save();
+
+            res.json({ success: true, message: 'Account Deleted' });
+        }
+
+    } catch (error) {
         console.error(error);
-      }
+    }
 
 })
 
@@ -286,7 +368,7 @@ connectDB();
 app.listen(port, async () => {
     console.log(`Example app listening on port ${port}`);
 
-  
+
     console.log('opening browser')
     const browser = await puppeteer.launch({
         headless: false,

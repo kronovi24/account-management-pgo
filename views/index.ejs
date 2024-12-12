@@ -92,22 +92,25 @@
 
                         <div class="mb-3">
                             <label for="name" class="form-label">Name:</label>
-                            <input type="text" class="form-control" id="name" name="name" placeholder="Type name here" required>
+                            <input type="text" class="form-control" id="name" name="name" placeholder="Type name here"
+                                required>
                         </div>
 
                         <div class="mb-3">
                             <label for="user" class="form-label">Username/Email:</label>
-                            <input type="text" class="form-control" id="user" name="user" placeholder="Type email here" required>
+                            <input type="text" class="form-control" id="user" name="user" placeholder="Type email here"
+                                required>
                         </div>
 
                         <div class="mb-3">
                             <label for="user" class="form-label">Remarks:</label>
-                            <input type="text" class="form-control" id="remarks" name="remarks" placeholder="..." >
+                            <input type="text" class="form-control" id="remarks" name="remarks" placeholder="...">
                         </div>
 
                         <div class="mb-3 ">
                             <label for="password" class="form-label">Password:</label>
-                            <input type="text" class="form-control border border-danger " id="pass" name="pass" required>
+                            <input type="text" class="form-control border border-danger " id="pass" name="pass"
+                                required>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -118,6 +121,48 @@
             </form>
         </div>
     </div>
+
+
+
+    <!-- logs modals -->
+
+    <!-- Modal -->
+    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="exampleModalLabel">History Logs</h1>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div>
+                        <table id="logsTable" class="display table-bordered table-striped" style="width: 100%;">
+                            <thead>
+                                <tr>
+                                    <th class="p-2">User</th>
+                                    <th class="p-2">Action Taken</th>
+                                    <th class="p-2">Account Affected</th>
+                                    <th class="p-2">Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+
+                            </tbody>
+                        </table>
+
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary">Save changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
 
 
     <div class="container-fluid p-0 mt-5">
@@ -154,15 +199,23 @@
                         </div>
                     </div>
 
+                    <% if (user.role==='admin' ) { %>
+                        <div class="col-4 col-lg-2 d-flex flex-column justify-content-around">
+                            <button type="button" class="btn btn-primary fw-bold" data-bs-toggle="modal"
+                                data-bs-target="#exampleModal">
+                                Logs
+                            </button>
+                            <button class="btn btn-danger fw-bold" onclick="resetTask()">Reset All Tasks</button>
+                        </div>
+                        <% } %>
 
-                    <div class="col-4 col-lg-2 d-flex flex-column justify-content-around">
-                        <button class="btn btn-warning fw-bold">View Logs</button>
-                        <button class="btn btn-danger fw-bold" onclick="resetTask()">Reset All Tasks</button>
-                    </div>
                 </div>
 
                 <div class="m-3 p-2 border border-dark rounded">
-                    <h2>Account List</h2>
+                    <div class="d-flex gap-2">
+                        <h2 class="m-0">Account List</h2> 
+                        <button class="btn btn-success d-flex align-items-center p-1" onclick="tableRefresh()"><i class='bx bx-refresh bx-sm'></i></button>
+                    </div>
                     <table id="accountsTable" class="display table-bordered table-striped" style="width: 100%;">
                         <thead>
                             <tr>
@@ -215,6 +268,8 @@
                         });
                         $('#createAcc').modal('hide');
                         table.ajax.reload()
+                        logsTable.ajax.reload()
+                        
                     },
                     error: function (xhr, status, error) {
                         console.log('Error:', error);
@@ -275,6 +330,25 @@
 
         });
 
+
+        
+
+        var logsTable = $('#logsTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '/getalllogs',
+                type: 'GET',
+            },
+            columns: [
+                { data: 'user' },
+                { data: 'action' },
+                { data: 'account' },
+                { data: 'createdAt' },
+                
+            ],
+        })
+
         function login(name, user, pass, id) {
 
             Swal.fire({
@@ -300,6 +374,7 @@
                             console.log(response);
                             if (response.success == true) {
                                 table.ajax.reload()
+                                logsTable.ajax.reload()
                             }
                         },
                         error: function (xhr, status, error) {
@@ -340,6 +415,7 @@
                                 if (response.success == true) {
                                     Swal.fire("Saved!", "", "success");
                                     table.ajax.reload()
+                                    logsTable.ajax.reload()
                                 }
                             },
                             error: function (xhr, status, error) {
@@ -353,6 +429,11 @@
 
 
 
+            }
+
+            function tableRefresh(){
+                table.ajax.reload()
+                logsTable.ajax.reload()
             }
 
 
@@ -373,6 +454,7 @@
                                 if (response.success == true) {
                                     Swal.fire("Saved!", "", "success");
                                     table.ajax.reload()
+                                    logsTable.ajax.reload()
                                 }
                             },
                             error: function (xhr, status, error) {
