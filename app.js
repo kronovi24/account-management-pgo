@@ -354,7 +354,10 @@ app.get('/logoutUser', (req, res) => {
 
 const connectDB = async () => {
     try {
-        await mongoose.connect("mongodb+srv://kronovi24:aezakmi24@pictu-db.3yj3b0d.mongodb.net/pgo?retryWrites=true&w=majority&appName=pictu-db")
+
+         await mongoose.connect('mongodb+srv://kronovi24:aezakmi24@pictu-db.3yj3b0d.mongodb.net/?retryWrites=true&w=majority&appName=pictu-db')
+        
+        
         console.log("Connect to MongoDB successfully")
     } catch (error) {
         console.log("Connect failed " + error.message)
